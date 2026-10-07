@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle, Input } from "@/components/ui/card";
 import { useSettings, type CardStyle, type Theme } from "@/hooks/useSettings";
@@ -33,6 +34,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 }
 
 export default function SettingsPage() {
+  const router = useRouter();
   const {
     sound,
     setSound,
@@ -65,7 +67,12 @@ export default function SettingsPage() {
 
   return (
     <Card className="mx-auto max-w-md">
-      <CardTitle>{t("settings.title")}</CardTitle>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <CardTitle>{t("settings.title")}</CardTitle>
+        <Button variant="outline" size="sm" onClick={() => router.back()}>
+          ← {t("settings.backToRoom")}
+        </Button>
+      </div>
 
       <div className="mb-4 space-y-2 p-3 rounded-xl bg-slate-900/90 border border-slate-800">
         <span className="text-xs font-bold uppercase tracking-wider text-slate-400">

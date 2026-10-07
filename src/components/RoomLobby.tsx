@@ -37,8 +37,7 @@ export function RoomLobby({ room, act }: { room: RoomView; act: Act }) {
   return (
     <Card className="mx-auto max-w-xl">
       <CardTitle>{t("lobby.title")}</CardTitle>
-      
-      {/* Invite Code & Wi-Fi Sharing */}
+      {/* Invite code and share link */}
       <div className="mb-4 p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2.5">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="text-sm text-slate-300">
@@ -61,18 +60,6 @@ export function RoomLobby({ room, act }: { room: RoomView; act: Act }) {
           </Button>
         </div>
 
-        {/* Local Wi-Fi banner */}
-        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-xs text-emerald-200">
-          <span className="text-base">📶</span>
-          <div className="leading-tight">
-            <span className="font-semibold">{t("lobby.wifi")}</span>
-            <span className="text-slate-300 block sm:inline sm:ml-1">
-              {t("lobby.wifiVisit")}{" "}
-              <b className="font-mono text-emerald-300">http://192.168.1.155:3000</b> {t("lobby.wifiAndEnter")}{" "}
-              <b className="font-mono text-emerald-300">{room.code}</b>
-            </span>
-          </div>
-        </div>
       </div>
       <ul className="mb-4 space-y-2">
         {room.seats.map((s, i) => (

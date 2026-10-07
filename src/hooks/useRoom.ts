@@ -130,6 +130,7 @@ export interface RoomView {
     preSwapHands: { suit: string; rank: string }[][] | null;
     currentHand: { suit: string; rank: string }[] | null;
   } | null;
+  actionDeadline: number | null;
   chat: ChatEntry[];
 }
 

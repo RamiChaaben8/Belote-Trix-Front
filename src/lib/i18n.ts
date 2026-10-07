@@ -43,6 +43,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
 
     // ---- Settings ----
     "settings.title": "Settings",
+    "settings.backToRoom": "Back to room",
     "settings.guest": "Guest identity",
     "settings.name": "Guest name",
     "settings.newName": "New name",
@@ -84,9 +85,6 @@ export const DICT: Record<Lang, Record<string, string>> = {
     "lobby.start": "Start game",
     "lobby.startQuick": "Start Quick Test",
     "lobby.waiting": "Waiting for the host to start the game…",
-    "lobby.wifi": "Play with devices on the same Wi-Fi:",
-    "lobby.wifiVisit": "Have other devices visit",
-    "lobby.wifiAndEnter": "and enter code",
 
     // ---- Mode names (landing + lobby selects) ----
     "mode.KingOfHearts": "King of Hearts",
@@ -129,6 +127,7 @@ export const DICT: Record<Lang, Record<string, string>> = {
 
     // ---- Réglages ----
     "settings.title": "Réglages",
+    "settings.backToRoom": "Retour à la room",
     "settings.guest": "Identité invité",
     "settings.name": "Pseudo",
     "settings.newName": "Nouveau pseudo",
@@ -170,9 +169,6 @@ export const DICT: Record<Lang, Record<string, string>> = {
     "lobby.start": "Lancer la partie",
     "lobby.startQuick": "Lancer le test rapide",
     "lobby.waiting": "En attente de l'hôte pour lancer la partie…",
-    "lobby.wifi": "Jouez avec les appareils sur le même Wi-Fi :",
-    "lobby.wifiVisit": "Faites ouvrir depuis un autre appareil",
-    "lobby.wifiAndEnter": "puis le code",
 
     // ---- Noms des modes (sélecteurs accueil + salon) ----
     "mode.KingOfHearts": "Roi de Cœur",

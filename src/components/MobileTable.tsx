@@ -6,6 +6,7 @@ import { CardFan } from "@/components/CardFan";
 import { CenterTrick } from "@/components/CenterTrick";
 import { TrixCenter } from "@/components/TrixCenter";
 import { PlayerPod } from "@/components/PlayerPod";
+import { OpponentHand } from "@/components/OpponentHand";
 import { PlayingCard } from "@/components/PlayingCard";
 import { MobileChat } from "@/components/MobileChat";
 import { MobileScoreboard } from "@/components/MobileScoreboard";
@@ -15,6 +16,7 @@ import { ObjectiveBanner } from "@/components/ObjectiveBanner";
 import { SwitchRevealOverlay } from "@/components/SwitchRevealOverlay";
 import { SwitchSwapAnimation } from "@/components/SwitchSwapAnimation";
 import { ScoreResetOverlay } from "@/components/ScoreResetOverlay";
+import { TurnTimer } from "@/components/TurnTimer";
 import type { LastTrickItem } from "@/components/LastPlayPanel";
 import type { TableProps } from "@/components/Table";
 import type { CardData, ModeId, Move } from "@/types";
@@ -131,6 +133,21 @@ export function MobileTable({
     );
   }
 
+  function renderOpponentHand(seat: number, position: "top" | "left" | "right") {
+    const player = room.seats[seat];
+    if (!player || room.phase !== "playing") return null;
+    return (
+      <div className={`mobile-opponent-hand mobile-opponent-hand-${position}`}>
+        <OpponentHand
+          cardCount={room.handCounts[seat] ?? 0}
+          position={position}
+          isThinking={(room.thinkingSeats ?? []).includes(seat)}
+          isCurrentTurn={!modalOpen && room.actor === seat}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="mobile-table-screen">
       <div className="mobile-table-felt" aria-hidden />
@@ -156,9 +173,18 @@ export function MobileTable({
         onlineCount={room.seats.filter((seat) => seat && seat.connected).length}
       />
 
-      <div className="mobile-player mobile-player-left">{renderCompactSeat(seatFor(1), "left")}</div>
-      <div className="mobile-player mobile-player-top">{renderCompactSeat(seatFor(2), "top")}</div>
-      <div className="mobile-player mobile-player-right">{renderCompactSeat(seatFor(3), "right")}</div>
+      <div className="mobile-player mobile-player-left">
+        {renderCompactSeat(seatFor(1), "left")}
+        {renderOpponentHand(seatFor(1), "left")}
+      </div>
+      <div className="mobile-player mobile-player-top">
+        {renderCompactSeat(seatFor(2), "top")}
+        {renderOpponentHand(seatFor(2), "top")}
+      </div>
+      <div className="mobile-player mobile-player-right">
+        {renderCompactSeat(seatFor(3), "right")}
+        {renderOpponentHand(seatFor(3), "right")}
+      </div>
 
       <div className="mobile-center-zone">
         <CenterTrick
@@ -256,6 +282,7 @@ export function MobileTable({
               ? `Waiting for ${name(room.actor)}`
               : ""}
           </span>
+          <TurnTimer deadline={room.actionDeadline} />
           {canPass && onTrixPass && (
             <button type="button" onClick={onTrixPass} className="mobile-pass-button">
               PASS

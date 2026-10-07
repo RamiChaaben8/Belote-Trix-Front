@@ -66,6 +66,13 @@ main:has(> .game-screen) {
   height: 100%;
 }
 
+.card-artwork {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
 .game-screen {
   position: relative;
   width: 100%;
@@ -419,6 +426,23 @@ main:has(> .game-screen) {
   animation: pulse 1.4s ease-in-out infinite;
 }
 
+.turn-timer {
+  display: inline-block;
+  margin-left: 0.45rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #f8fafc;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.turn-timer-urgent {
+  background: #dc2626;
+  color: #fff;
+  animation: pulse 0.8s ease-in-out infinite;
+}
+
 .mobile-pass-button {
   padding: 5px 9px;
   border: 1px solid #64748b;
@@ -738,6 +762,52 @@ main:has(> .game-screen) {
   .mobile-player-left .relative,
   .mobile-player-right .relative {
     transform: scale(0.9);
+  }
+
+  .mobile-opponent-hand-top {
+    position: absolute;
+    top: 42px;
+    left: 50%;
+    width: 170px;
+    height: 52px;
+    transform: translateX(-50%);
+  }
+
+  .mobile-opponent-hand-top .opp-card-top {
+    width: 30px;
+    height: 43px;
+  }
+
+  .mobile-opponent-hand-top .opp-gap-top {
+    margin-left: -17px;
+  }
+
+  .mobile-opponent-hand-left,
+  .mobile-opponent-hand-right {
+    position: absolute;
+    top: 34px;
+    width: 54px;
+    height: 130px;
+  }
+
+  .mobile-opponent-hand-left {
+    left: 54px;
+  }
+
+  .mobile-opponent-hand-right {
+    right: 54px;
+  }
+
+  .mobile-opponent-hand-left .opp-card-side,
+  .mobile-opponent-hand-right .opp-card-side {
+    width: 30px;
+    height: 43px;
+    --side-l: 43px;
+  }
+
+  .mobile-opponent-hand-left .opp-gap-side,
+  .mobile-opponent-hand-right .opp-gap-side {
+    margin-top: -27px;
   }
 }
 

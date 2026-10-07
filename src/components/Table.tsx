@@ -16,6 +16,7 @@ import { ObjectiveBanner } from "@/components/ObjectiveBanner";
 import { SwitchRevealOverlay } from "@/components/SwitchRevealOverlay";
 import { SwitchSwapAnimation } from "@/components/SwitchSwapAnimation";
 import { ScoreResetOverlay } from "@/components/ScoreResetOverlay";
+import { TurnTimer } from "@/components/TurnTimer";
 import type { LastTrickItem } from "@/components/LastPlayPanel";
 import type { LastTrick, RoomView, ChatEntry, RoundFinishedPayload, ScoreResetPayload } from "@/hooks/useRoom";
 import type { CardData, Move, ModeId } from "@/types";
@@ -437,6 +438,7 @@ export function Table({
                       ? `${name(room.actor)} is thinking…`
                       : `Waiting for ${name(room.actor)}…`
                     : ""}
+                  <TurnTimer deadline={room.actionDeadline} />
                 </span>
               )}
 
