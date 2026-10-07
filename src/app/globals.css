@@ -1,0 +1,454 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  background: #020617;
+  color: #e2e8f0;
+  min-height: 100%;
+}
+
+body {
+  background-image: radial-gradient(ellipse at top, #0b3b2a 0%, #020617 60%);
+  background-attachment: fixed;
+}
+
+@keyframes screen-shake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  10%, 30%, 50%, 70%, 90% { transform: translate(-6px, 4px) rotate(-1deg); }
+  20%, 40%, 60%, 80% { transform: translate(6px, -4px) rotate(1deg); }
+}
+
+@keyframes red-pulse {
+  0%, 100% { box-shadow: inset 0 0 0 rgba(239, 68, 68, 0); }
+  50% { box-shadow: inset 0 0 120px rgba(239, 68, 68, 0.75); }
+}
+
+.animate-screen-shake {
+  animation: screen-shake 0.65s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+.animate-red-pulse {
+  animation: red-pulse 1.2s ease-in-out infinite;
+}
+
+/* ============================================================
+   GAME SCREEN — full-viewport table with CSS-grid zones
+   ============================================================
+   Zones:  "tl  top  tr"
+           "left center right"
+           "bl bottom br"
+   rows/columns are `auto minmax(0,1fr) auto`, so the center area
+   only receives the space the player zones don't use. The Trix
+   board and trick area live exclusively inside `center`.
+   ============================================================ */
+
+:root {
+  /* Overwritten at runtime by <Navbar /> via ResizeObserver. */
+  --nav-h: 52px;
+}
+
+/* The room page opts out of the centered marketing container
+   (layout.tsx wraps every page in main.max-w-6xl.px-4.py-6). */
+main:has(> .game-screen) {
+  max-width: none;
+  margin-inline: 0;
+  padding: 0;
+}
+
+.game-screen {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - var(--nav-h));
+  height: calc(100dvh - var(--nav-h));
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Decorative felt — background only, never receives pointer events.
+   The grid sits on top of it with its own padding. */
+.table-felt {
+  position: absolute;
+  inset: 0;
+  border-radius: clamp(1.5rem, 4.5vmin, 4.5rem);
+  border: clamp(7px, 1.4vmin, 16px) solid rgba(69, 26, 3, 0.95);
+  background: radial-gradient(ellipse at center, #13734a 0%, #0d5435 45%, #083722 80%, #031c11 100%);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.95), inset 0 0 90px rgba(0, 0, 0, 0.75);
+  pointer-events: none;
+}
+.table-felt::after {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border-radius: inherit;
+  border: 2px solid rgba(251, 191, 36, 0.38);
+  box-shadow: inset 0 0 30px rgba(251, 191, 36, 0.16);
+}
+
+.table-grid {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "tl top tr"
+    "left center right"
+    "bl bottom br";
+  gap: clamp(6px, 1.2vmin, 16px);
+  padding: clamp(10px, 1.6vmin, 22px);
+}
+
+.zone {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+.z-tl { grid-area: tl; }
+.z-tr {
+  grid-area: tr;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  /* clear the fixed chat toggle in the top-right corner */
+  padding-top: 44px;
+}
+.z-bl { grid-area: bl; }
+.z-br { grid-area: br; }
+
+.z-top {
+  grid-area: top;
+  z-index: 20;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+}
+.z-bottom {
+  grid-area: bottom;
+  z-index: 25;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.z-left,
+.z-right {
+  z-index: 20;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  /* keeps the rotated cards + their thinking-scale bleed inside the cell */
+  padding-inline: 6px;
+}
+.z-left { grid-area: left; }
+.z-right { grid-area: right; }
+
+/* Center zone — the ONLY home of the trick area and Trix lanes.
+   container-type: size enables container-query units (cqw/cqh) so the
+   Trix card size derives from this zone's own box; it also applies
+   layout containment, making it a stacking context, so cards inside
+   can never paint over the player zones. */
+.z-center {
+  grid-area: center;
+  z-index: 20;
+  position: relative;
+  overflow: visible;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* -------- Trix board sizing -------------------------------------
+   Center container-based sizing:
+     fills ~90% center width and ~95% center height with 2cqw gap.
+     Stack height = 8 slots with ~38% overlap (each next slot offset by 62% of card-h):
+       laneHeight - headerHeight = card-h * (8 * 0.62 + 0.38) = card-h * 5.34
+       --card-h = (laneHeight - headerHeight) / (8 * 0.62 + 0.38)
+       --card-w = min(var(--card-h) * 0.7, laneWidth - padding)
+------------------------------------------------------------------ */
+.trix-center {
+  position: fixed;
+  inset: var(--nav-h) 0 0;
+  width: 100vw;
+  height: calc(100dvh - var(--nav-h));
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+
+  --trix-header-h: 34px;
+  --trix-lane-gap: 12px;
+  --trix-board-w: min(82vw, 980px);
+  --trix-board-h: min(78vh, 620px);
+  --trix-lane-w: calc((var(--trix-board-w) - (3 * var(--trix-lane-gap))) / 4);
+  --trix-lane-usable-h: calc(var(--trix-board-h) - var(--trix-header-h));
+
+  --card-h: clamp(52px, 9vh, 92px);
+  /* Cap card width at lane width minus 4px padding */
+  --card-w: min(calc(var(--card-h) * 0.692), calc(var(--trix-lane-w) - 8px));
+}
+.trix-slot {
+  width: var(--card-w);
+  height: var(--card-h);
+}
+
+/* -------- Player pods (bigger avatars & text) ------------------- */
+.pod-avatar {
+  width: 48px;
+  height: 48px;
+  font-size: 22px;
+}
+.pod-name { font-size: 12px; }
+.pod-score { font-size: 11px; }
+
+@media (min-width: 640px) {
+  .pod-avatar { width: 60px; height: 60px; font-size: 27px; }
+  .pod-name { font-size: 14px; }
+  .pod-score { font-size: 13px; }
+}
+@media (min-width: 1024px) {
+  .pod-avatar { width: 72px; height: 72px; font-size: 34px; }
+  .pod-name { font-size: 15px; }
+  .pod-score { font-size: 14px; }
+}
+/* Short viewports: shrink pods so the center keeps its space. */
+@media (max-height: 720px) {
+  .pod-avatar { width: 40px; height: 40px; font-size: 18px; }
+  .pod-name { font-size: 11px; }
+  .pod-score { font-size: 11px; }
+}
+/* Side pods: keep names from widening the side columns. */
+.z-left .pod-name,
+.z-right .pod-name {
+  max-width: 78px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* -------- Opponent hands ----------------------------------------
+   Sizes/overlaps live here (after @tailwind utilities, so they win
+   over PlayingCard's built-in size classes):
+     top:  cards side-by-side, each next card overlaps the previous
+           by (width − |margin-left|) visible pixels
+     side: cards rotated ±90°, layout step = height − |margin-top|  */
+.opp-card-top { width: 52px; height: 74px; }
+.opp-gap-top { margin-left: -28px; }
+
+@media (min-width: 768px) {
+  .opp-card-top { width: 64px; height: 92px; }
+  .opp-gap-top { margin-left: -32px; }
+}
+@media (max-height: 720px) {
+  .opp-card-top { width: 44px; height: 64px; }
+  .opp-gap-top { margin-left: -26px; }
+}
+
+/* Side hands: the wrapper fills the zone cell's leftover height (the pod
+   and hand share the 1fr middle row) and is itself a size container, so
+   everything derives from actual free space — no hardcoded px:
+
+     card length L  = --side-l  (≤ the zone's width budget, ≤ cqh share)
+     stack total    = L + 7 × 0.36L = 3.52L  ≤ ~85% of 100cqh
+
+   On shorter cells fewer backs are shown via nth-child — the true count
+   always remains visible in the player's own pod pill. */
+.opp-hand-side {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  container-type: size;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  --side-l: min(88px, 24cqh);
+}
+.opp-card-side {
+  width: calc(var(--side-l) * 0.692);
+  height: var(--side-l);
+}
+.opp-gap-side {
+  margin-top: calc(var(--side-l) * -0.64);
+}
+
+/* ≤330px free height → 6 backs: total = 2.8L ≤ 87% of the space.
+   Note: the size override must live on DESCENDANTS — unnamed @container
+   rules never match the query container element itself. */
+@container (max-height: 330px) {
+  .opp-hand-side .opp-slot { --side-l: min(86px, 31cqh); }
+  .opp-hand-side .opp-slot:nth-child(n + 7) { display: none; }
+}
+/* ≤225px free height → 4 backs: total = 2.08L ≤ 87% of the space */
+@container (max-height: 225px) {
+  .opp-hand-side .opp-slot { --side-l: min(84px, 42cqh); }
+  .opp-hand-side .opp-slot:nth-child(n + 5) { display: none; }
+}
+
+/* Last-trick panel lives in the center corner (never under a player)
+   and only when the center is wide enough not to cover the trick. */
+.last-play { display: none; }
+@media (min-width: 640px) {
+  .last-play { display: block; }
+}
+
+/* ============================================================
+   SETTINGS — local browser preferences (Settings page)
+   Applied by useSettings as attributes on <html>:
+     data-theme="dark" | "light"
+     data-card-style="classic" | "modern" | "minimal"
+     data-anim="on" | "off"
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   ANIMATIONS OFF — CSS keyframes/transitions.
+   framer-motion is handled separately via MotionConfig
+   (reducedMotion="always"), this covers everything CSS-driven:
+   card deal, screen shake, red pulse, fades, hover transitions.
+   ------------------------------------------------------------ */
+[data-anim="off"] *,
+[data-anim="off"] *::before,
+[data-anim="off"] *::after {
+  animation-duration: 0.001s !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001s !important;
+  transition-delay: 0s !important;
+}
+
+/* ------------------------------------------------------------
+   CARD STYLE — PlayingCard exposes .playing-card / .card-back,
+   .card-watermark, .card-pattern and .card-label hooks.
+   ------------------------------------------------------------ */
+/* Modern: crisp corners, flat bright face, cool blue back. */
+[data-card-style="modern"] .playing-card {
+  border-radius: 3px !important;
+  background: #ffffff !important;
+  background-image: none !important;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.35) !important;
+}
+[data-card-style="modern"] .playing-card .card-watermark { opacity: 0.1 !important; }
+[data-card-style="modern"] .card-back {
+  border-radius: 3px !important;
+  background-image: linear-gradient(135deg, #0ea5e9 0%, #1d4ed8 100%) !important;
+}
+[data-card-style="modern"] .card-back .card-pattern { display: none; }
+
+/* Minimal: uncoated paper face, thin border, plain slate back. */
+[data-card-style="minimal"] .playing-card {
+  background: #fffdf5 !important;
+  background-image: none !important;
+  border-color: rgba(15, 23, 42, 0.18) !important;
+  box-shadow: none !important;
+}
+[data-card-style="minimal"] .playing-card .card-watermark { opacity: 0.06 !important; }
+[data-card-style="minimal"] .card-back {
+  background: #334155 !important;
+  background-image: none !important;
+  border-color: #64748b !important;
+}
+[data-card-style="minimal"] .card-back .card-pattern { display: none; }
+[data-card-style="minimal"] .card-back .card-label { letter-spacing: 0.12em; }
+
+/* ------------------------------------------------------------
+   THEME — light palette.
+   The app is styled with explicit dark slate utilities, so light
+   mode remaps those utilities. The card table (.game-screen) keeps
+   its dark, high-contrast look in both themes — every rule below is
+   scoped with :not(.game-screen *) so accent colours and panels over
+   the felt are untouched.
+   ------------------------------------------------------------ */
+[data-theme="light"],
+[data-theme="light"] body {
+  background-color: #eef2f7;
+  color-scheme: light;
+}
+[data-theme="light"] body {
+  color: #0f172a;
+  background-image: radial-gradient(ellipse at top, #d9ecff 0%, #eef2f7 60%);
+}
+
+/* Surfaces: dark slate → light paper. Translucent variants keep their alpha. */
+[data-theme="light"] .bg-slate-950:not(.game-screen *) { background-color: #ffffff !important; }
+[data-theme="light"] .bg-slate-900:not(.game-screen *) { background-color: #f8fafc !important; }
+[data-theme="light"] .bg-slate-800:not(.game-screen *) { background-color: #eef2f7 !important; }
+[data-theme="light"] .bg-slate-700:not(.game-screen *) { background-color: #e2e8f0 !important; }
+[data-theme="light"] .bg-slate-600:not(.game-screen *) { background-color: #cbd5e1 !important; }
+[data-theme="light"]
+  :is(.bg-slate-950\/95, .bg-slate-950\/90, .bg-slate-900\/95, .bg-slate-900\/90):not(.game-screen *)
+  { background-color: rgba(255, 255, 255, 0.93) !important; }
+[data-theme="light"]
+  :is(.bg-slate-950\/80, .bg-slate-950\/70, .bg-slate-900\/80, .bg-slate-900\/70, .bg-slate-800\/80, .bg-slate-800\/70):not(.game-screen *)
+  { background-color: rgba(255, 255, 255, 0.86) !important; }
+[data-theme="light"]
+  :is(.bg-slate-950\/60, .bg-slate-950\/50, .bg-slate-950\/40, .bg-slate-900\/60, .bg-slate-900\/50, .bg-slate-900\/40, .bg-slate-800\/60, .bg-slate-800\/50, .bg-slate-800\/40, .bg-slate-700\/60, .bg-slate-700\/50, .bg-slate-600\/50):not(.game-screen *)
+  { background-color: rgba(255, 255, 255, 0.76) !important; }
+
+/* Borders */
+[data-theme="light"]
+  :is(.border-slate-900, .border-slate-800, .border-slate-800\/80, .border-slate-800\/60, .border-slate-800\/40, .border-slate-700, .border-slate-700\/60):not(.game-screen *)
+  { border-color: #cbd5e1 !important; }
+[data-theme="light"]
+  :is(.border-slate-600, .border-slate-600\/50, .border-slate-500):not(.game-screen *)
+  { border-color: #94a3b8 !important; }
+
+/* Text: everything sitting on a light surface becomes dark… */
+[data-theme="light"] .text-white:not(.game-screen *) { color: #0f172a !important; }
+[data-theme="light"] :is(.text-slate-100, .text-slate-200):not(.game-screen *) { color: #1e293b !important; }
+[data-theme="light"] .text-slate-300:not(.game-screen *) { color: #334155 !important; }
+[data-theme="light"] :is(.text-slate-400, .text-slate-500):not(.game-screen *) { color: #64748b !important; }
+[data-theme="light"] :is(.text-emerald-300, .text-emerald-400, .text-emerald-500):not(.game-screen *) { color: #047857 !important; }
+[data-theme="light"] .text-emerald-200:not(.game-screen *) { color: #065f46 !important; }
+[data-theme="light"] :is(.text-amber-200, .text-amber-300, .text-amber-400):not(.game-screen *) { color: #b45309 !important; }
+[data-theme="light"] :is(.text-red-400, .text-rose-400):not(.game-screen *) { color: #dc2626 !important; }
+[data-theme="light"] .text-yellow-300:not(.game-screen *) { color: #a16207 !important; }
+
+/* …unless it sits on a background that stays dark or coloured
+   (emerald/red buttons, alerts, badges, gradient panels). */
+[data-theme="light"]
+  :is(.text-white)[class*="bg-"]:not([class*="bg-slate-"]),
+[data-theme="light"]
+  [class*="bg-"]:not([class*="bg-slate-"]) .text-white
+  { color: #ffffff !important; }
+[data-theme="light"]
+  :is(.text-slate-100, .text-slate-200)[class*="bg-"]:not([class*="bg-slate-"]),
+[data-theme="light"]
+  [class*="bg-"]:not([class*="bg-slate-"]) :is(.text-slate-100, .text-slate-200)
+  { color: #e2e8f0 !important; }
+[data-theme="light"]
+  .text-slate-300[class*="bg-"]:not([class*="bg-slate-"]),
+[data-theme="light"]
+  [class*="bg-"]:not([class*="bg-slate-"]) .text-slate-300
+  { color: #cbd5e1 !important; }
+[data-theme="light"]
+  :is(.text-slate-400, .text-slate-500)[class*="bg-"]:not([class*="bg-slate-"]),
+[data-theme="light"]
+  [class*="bg-"]:not([class*="bg-slate-"]) :is(.text-slate-400, .text-slate-500)
+  { color: #94a3b8 !important; }
+[data-theme="light"]
+  :is(.text-emerald-200, .text-emerald-300, .text-emerald-400, .text-emerald-500)[class*="bg-"]:not([class*="bg-slate-"]),
+[data-theme="light"]
+  [class*="bg-"]:not([class*="bg-slate-"]) :is(.text-emerald-200, .text-emerald-300, .text-emerald-400, .text-emerald-500)
+  { color: #6ee7b7 !important; }
+[data-theme="light"]
+  :is(.text-amber-200, .text-amber-300, .text-amber-400)[class*="bg-"]:not([class*="bg-slate-"]),
+[data-theme="light"]
+  [class*="bg-"]:not([class*="bg-slate-"]) :is(.text-amber-200, .text-amber-300, .text-amber-400)
+  { color: #fcd34d !important; }
+[data-theme="light"]
+  :is(.text-red-400, .text-rose-400)[class*="bg-"]:not([class*="bg-slate-"]),
+[data-theme="light"]
+  [class*="bg-"]:not([class*="bg-slate-"]) :is(.text-red-400, .text-rose-400)
+  { color: #f87171 !important; }
+
+/* Placeholders & hover states */
+[data-theme="light"] .placeholder\:text-slate-400::placeholder:not(.game-screen *) { color: #64748b !important; }
+[data-theme="light"] .hover\:text-white:hover:not(.game-screen *) { color: #0f172a !important; }
+[data-theme="light"] :is(.hover\:text-slate-100:hover, .hover\:text-slate-200:hover):not(.game-screen *) { color: #1e293b !important; }
+[data-theme="light"] .hover\:text-slate-300:hover:not(.game-screen *) { color: #334155 !important; }
+[data-theme="light"] .hover\:bg-slate-700:hover:not(.game-screen *) { background-color: #cbd5e1 !important; }
+[data-theme="light"] .hover\:bg-slate-800:hover:not(.game-screen *) { background-color: #e2e8f0 !important; }
+[data-theme="light"] .hover\:bg-slate-900:hover:not(.game-screen *) { background-color: #f1f5f9 !important; }
+[data-theme="light"] .hover\:bg-slate-950:hover:not(.game-screen *) { background-color: #f1f5f9 !important; }
