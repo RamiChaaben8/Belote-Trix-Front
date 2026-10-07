@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
@@ -10,6 +11,11 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1 };
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className="dark">
+      <Script
+        async
+        src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7257608892215470"
+        crossOrigin="anonymous"
+      />
       <body className="min-h-screen font-sans antialiased">
         <Providers>
           <Navbar />
