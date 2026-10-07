@@ -20,7 +20,7 @@ import type { LastTrickItem } from "@/components/LastPlayPanel";
 import type { LastTrick, RoomView, ChatEntry, RoundFinishedPayload, ScoreResetPayload } from "@/hooks/useRoom";
 import type { CardData, Move, ModeId } from "@/types";
 
-type Act = (event: string, payload?: unknown) => Promise<unknown>;
+export type Act = (event: string, payload?: unknown) => Promise<unknown>;
 
 const POS = ["bottom", "left", "top", "right"] as const;
 type Position = (typeof POS)[number];
@@ -42,6 +42,22 @@ type Position = (typeof POS)[number];
  * - Scoreboard / chat / leave button / banners are overlays and do
  *   not shrink the table.
  */
+export interface TableProps {
+  room: RoomView;
+  lastTrick: LastTrick | null;
+  roundFinished: RoundFinishedPayload | null;
+  roundBanner: RoundFinishedPayload | null;
+  onRoundDismissed: () => void;
+  trixExtraTurnSeat?: number | null;
+  onTrixPass?: () => void;
+  chat?: ChatEntry[];
+  act: Act;
+  gameId: string | null;
+  switchCountdown?: number | null;
+  switchSwapAnimating?: boolean;
+  scoreResets?: ScoreResetPayload[];
+}
+
 export function Table({
   room,
   lastTrick,
@@ -56,27 +72,7 @@ export function Table({
   switchCountdown,
   switchSwapAnimating = false,
   scoreResets = [],
-}: {
-  room: RoomView;
-  lastTrick: LastTrick | null;
-  /** Live payload from the `round_finished` socket event — non-null while modal should show. */
-  roundFinished: RoundFinishedPayload | null;
-  /** Immediate banner shown during trick collection animation, before the full modal. */
-  roundBanner: RoundFinishedPayload | null;
-  /** Called when the user clicks "Continue" on the round summary modal. */
-  onRoundDismissed: () => void;
-  /** Seat that just got an Ace extra turn in Trix mode. */
-  trixExtraTurnSeat?: number | null;
-  /** Called when the user clicks PASS in Trix mode. */
-  onTrixPass?: () => void;
-  chat?: ChatEntry[];
-  act: Act;
-  gameId: string | null;
-  switchCountdown?: number | null;
-  switchSwapAnimating?: boolean;
-  /** Global Rule #2 — pending ⚡ SCORE RESET ⚡ notifications. */
-  scoreResets?: ScoreResetPayload[];
-}) {
+}: TableProps) {
   const me = room.you ?? 0;
   const rel = (seat: number) => (seat - me + 4) % 4;
 

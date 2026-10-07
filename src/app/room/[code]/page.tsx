@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { RoomLobby } from "@/components/RoomLobby";
 import { Table } from "@/components/Table";
+import { MobileTable } from "@/components/MobileTable";
 import { Button } from "@/components/ui/button";
 import { useRoom } from "@/hooks/useRoom";
 
@@ -99,21 +100,40 @@ export default function RoomPage() {
       )}
 
       {/* Main card table with full focus */}
-      <Table
-        room={room}
-        lastTrick={lastTrick}
-        roundFinished={roundFinished}
-        roundBanner={roundBanner}
-        onRoundDismissed={() => setRoundFinished(null)}
-        chat={chat}
-        act={act}
-        gameId={gameId}
-        trixExtraTurnSeat={trixExtraTurnSeat}
-        onTrixPass={handleTrixPass}
-        switchCountdown={switchCountdown}
-        switchSwapAnimating={switchSwapAnimating}
-        scoreResets={scoreResets}
-      />
+      <div className="desktop-game-layout">
+        <Table
+          room={room}
+          lastTrick={lastTrick}
+          roundFinished={roundFinished}
+          roundBanner={roundBanner}
+          onRoundDismissed={() => setRoundFinished(null)}
+          chat={chat}
+          act={act}
+          gameId={gameId}
+          trixExtraTurnSeat={trixExtraTurnSeat}
+          onTrixPass={handleTrixPass}
+          switchCountdown={switchCountdown}
+          switchSwapAnimating={switchSwapAnimating}
+          scoreResets={scoreResets}
+        />
+      </div>
+      <div className="mobile-game-layout">
+        <MobileTable
+          room={room}
+          lastTrick={lastTrick}
+          roundFinished={roundFinished}
+          roundBanner={roundBanner}
+          onRoundDismissed={() => setRoundFinished(null)}
+          chat={chat}
+          act={act}
+          gameId={gameId}
+          trixExtraTurnSeat={trixExtraTurnSeat}
+          onTrixPass={handleTrixPass}
+          switchCountdown={switchCountdown}
+          switchSwapAnimating={switchSwapAnimating}
+          scoreResets={scoreResets}
+        />
+      </div>
     </div>
   );
 }
